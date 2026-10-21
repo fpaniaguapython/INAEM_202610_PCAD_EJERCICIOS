@@ -11,7 +11,38 @@ Original file is located at
 
 import pandas as pd
 
+def convertir_a_digitos(df: pd.DataFrame, nombre_columna: str) -> None:
+  """
+  Convierte los valores de una columna del DataFrame en cadenas numéricas.
+
+  Sustituye las comas por puntos y extrae la primera secuencia de dígitos
+  que representa un número entero o decimal. Modifica la columna
+  directamente en el DataFrame original.
+
+  Parameters
+  ----------
+  df : pd.DataFrame
+      DataFrame que contiene la columna que se va a convertir.
+  nombre_columna : str
+      Nombre de la columna cuyos valores se van a transformar.
+
+  Returns
+  -------
+  None
+      La función modifica el DataFrame original sin devolver ningún valor.
+
+  Notes
+  -----
+  Los valores que no contienen una secuencia numérica válida se convierten
+  en NaN. Los resultados se almacenan como cadenas de texto, no como
+  valores numéricos.
+  """
+  df[nombre_columna]=df[nombre_columna].astype(str).str.replace(',','.').str.extract(r'(\d+\.?\d*)')
+
 URL='http://fpaniaguapython.github.io/datos/CTA-PCAD-202610%20(respuestas).csv'
+
+UMBRAL_ALTURA = 3 # Umbral de altura. Menos de este valor, se multiplica por 100
+UMBRAL_PESO = 200 # Umbral de peso máximo.
 
 df = pd.read_csv(URL)
 display(df)
@@ -38,8 +69,65 @@ df.sample(frac=0.1) # 10%
 nombres = df['Nombre'] # Acceso a la columna Nombre
 type(nombres) # El tipo es Series
 
-# df_copia = df # Ambas variables apuntan al mismo dataframe
-df_copia = df.copy(deep=True) # deep=True por defecto, no es necesario
-df_copia['Nombre']='Desconocido'
+# df_original = df # Ambas variables apuntan al mismo dataframe
+df_original = df.copy(deep=True) # deep=True por defecto, no es necesario
+df['Nombre']='Desconocido'
 display(df.head())
-display(df_copia.head())
+display(df.head())
+
+## Homogeneizamos los nombres de las columnas
+
+df.columns = df.columns.str.lower().str.replace(' ','_')
+display(df.columns)
+
+"""## Convertir a numérico la columna altura - to_numeric"""
+
+convertir_a_digitos(df, 'altura')
+df['altura'] = pd.to_numeric(df['altura'], errors='coerce')
+df.head()
+
+"""## Multiplicamos x 100 las alturas menores de 3 metros"""
+
+df.loc[df['altura']<UMBRAL_ALTURA, 'altura'] *= 100
+df.head()
+
+"""## Eliminamos las filas en las que las alturas son NaN"""
+
+df_sin_NaN = df.dropna(subset=['altura'])
+df_sin_NaN.info()
+
+"""## Sustituimos las alturas NaN por la media de alturas"""
+
+media_altura = df['altura'].mean()
+df['altura'] = df['altura'].fillna(media_altura)
+df.head()
+
+"""## Convertir la columna de altura a int"""
+
+df['altura'] = df['altura'].astype(int)
+df.head()
+
+"""## Normalización de la columna peso"""
+
+convertir_a_digitos(df, 'peso')
+df['peso'] = pd.to_numeric(df['peso'], errors='coerce')
+df['peso'].fillna(df['peso'].mean(), inplace=True)
+df.info()
+
+"""## Eliminamos los individuos que superen el umbral de peso UMBRAL_PESO"""
+
+df = df[df['peso'] <= UMBRAL_PESO]
+df.info()
+
+"""## Conversión del tipo de la columna fecha_de_nacimiento"""
+
+df['fecha_de_nacimiento'] = pd.to_datetime(df['fecha_de_nacimiento'], format='%d/%m/%Y', errors='coerce')
+df = df.dropna(subset=['fecha_de_nacimiento'])
+df.info()
+
+convertir_a_digitos(df, 'patrimonio_(en_€)')
+df['patrimonio_normalizado'] = pd.to_numeric(df['patrimonio_(en_€)'], errors='coerce')
+df['patrimonio_normalizado'] = df['patrimonio_normalizado'].fillna(df['patrimonio_normalizado'].mean())
+df['patrimonio_normalizado']=df['patrimonio_normalizado'].astype(int)
+df[['patrimonio_(en_€)','patrimonio_normalizado']]
+

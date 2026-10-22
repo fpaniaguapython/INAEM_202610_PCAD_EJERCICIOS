@@ -131,3 +131,26 @@ df['patrimonio_normalizado'] = df['patrimonio_normalizado'].fillna(df['patrimoni
 df['patrimonio_normalizado']=df['patrimonio_normalizado'].astype(int)
 df[['patrimonio_(en_€)','patrimonio_normalizado']]
 
+"""## Estadísticas básicas del DataFrame"""
+
+df.describe()
+
+df.info()
+
+"""## Utilizamos seaborn para mostrar las correlaciones entre variables numéricas"""
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.pairplot(df) # Empareja todas las variables numéricas
+sns.pairplot(df[['altura', 'peso']]) # Empareja las variables que se indican en la lista
+plt.show()
+
+plt.boxplot(df['altura'], orientation='horizontal')
+plt.show()
+
+plt.boxplot(df['peso'], orientation='horizontal')
+plt.show()
+
+plt.boxplot([df['peso'], df['altura']], orientation='horizontal')
+plt.show()
